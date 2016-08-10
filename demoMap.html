@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Map</title>
+<script>
+function initMap() {
+	var myLatLng = new google.maps.LatLng( 22.285287, 114.147041 );
+	var myOptions = {
+		 zoom: 15,
+		 center: myLatLng,
+		 mapTypeId: google.maps.MapTypeId.ROADMAP
+	}
+	var map = new google.maps.Map( document.getElementById( "map_canvas" ), myOptions );
+	var marker = new google.maps.Marker({
+		position: myLatLng,
+		map: map,
+		title: 'Hello World!'
+	});
+}
+</script>
+<script async defer
+	src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAoNqJmJVhZjRwTaIijXRsYscG4GzF6BbA&callback=initMap">
+	<iframe src="youtubePage.html" width=320px height=240px frameborder="0" allowfullscreen></iframe>
+</script>
+<style>
+html {
+	height: 100%;
+	overflow: hidden;
+}
+body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+}
+#map_canvas { 
+	height: 100%;
+}    
+</style>
+</head>
+<body>
+<div id="map_canvas"></div>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="css\jquery.mobile-1.4.5.min.css">
+<link rel="stylesheet" href="css\themes\drug.min.css" />
+<link rel="stylesheet" href="css\themes\jquery.mobile.icons.min.css" />
+<style>
+textarea			{ 	width: 100%; }
+</style>
+<script type="text/javascript" src="js\jquery-2.2.4.min.js"></script>
+<script type="text/javascript" src="js\jquery.mobile-1.4.5.min.js"></script>
+<script type="text/javascript" src="js\myApp.js"></script>
+<script>
+$(document).on("pageinit",function() {
+	$("#delText").click(function(e) {
+		console.log("delete comID:"+$(e.target).attr("comID"));
+		var jsData = { "recID" : $(e.target).attr("comID") };
+		$.ajax({
+			url: "http://jimmysiu.me.ht/php/delPost.php",
+			data: jsData,
+			type: "DELETE",
+			dataType: "json",
+			success: function(result) {
+				if(result=="success") {
+					$.mobile.loadPage("#");
+					refreshList();
+				} else {
+					// handle delete fail
+				}
+			}
+		});		
+	});
+	
+	$("#newText").click(function(e) {
+		var newText = $("#taText").val();
+		if(newText == "") { return; }
+		var jsData = { "loginid" : "1", "newComment" : newText };
+		console.log("jsData:"+JSON.stringify(jsData));
+		$.ajax({
+			url: "http://jimmysiu.me.ht/php/newPost.php",
+			type: "POST",
+			data: jsData,
+			dataType: "json",
+			success: function(result) {
+				if(result == "success") {
+					refreshList();
+				}
+			},
+			error: function(xhr, ajaxOptions, thrownError) {
+				console.log("error:"+thrownError);
+			}
+		});
+	});
+})
+
+
+$(document).on("pagebeforeshow",function() {
+	refreshList();
+});
+
+
+function refreshList() {
+	console.log("host:"+urlHost);
+	$("#taText").val("");
+	$.ajax({
+		url: "http://jimmysiu.me.ht/php/getPost.php",
+		type: "GET",
+		data: null,
+		dataType: "json",
+		success: function(returnData, status) {
+			if(status=="success") {
+				var loginName = localStorage.getItem("loginName");
+				var htmlText = "";
+				$("#conList").children("ul").html("");
+				$.each(returnData, function (i, v) {
+					htmlText = '<li>';
+					htmlText += '<h1 id="c_'+v.id+'">'+v.comment+'</h1>';
+					htmlText += '<p>'+v.userid+' | '+v.createTime+'</p>';
+					htmlText += '<button onclick="gotoEditPage('+v.id+')">Edit</button>&nbsp&nbsp&nbsp';
+					htmlText += '<button onclick="gotoDelPage('+v.id+')">Delete</button>';
+					htmlText += '</li>';
+					$('#conList').children("ul").append(htmlText);
+				});
+				$('#conList').children("ul").listview("refresh");
+			}
+		},
+		error: function(xhr, ajaxOptions, thrownError) {
+			alert("xhr:"+xhr+"\nthrownError"+thrownError);
+		}
+	});
+}
+
+
+function gotoEditPage(comID) {
+	curText = $("#c_"+comID).html();
+	console.log("current text:"+curText);
+	$("#editText").attr("comID",comID);
+	$("#editText").val(curText);
+	$.mobile.changePage("#editPage");
+}
+
+function updateText() {
+	if($("#editText").val()=="") {
+		// text cannot be blank
+		return;
+	}
+
+	var jsData = { "recID" : $("#editText").attr("comID"), "newComment" : $("#editText").val() };
+	
+	
+	$.ajax({
+		url: "http://jimmysiu.me.ht/php/updatePost.php",
+		type: "PUT",
+		data: jsData,
+		dataType: "json",
+		success: function(result, status) {
+			console.log("result:"+JSON.stringify(result));
+			if(result == "success") {
+				$.mobile.changePage("#");
+				refreshList();
+			}
+		},
+		error: function(xhr, ajaxOptions, thrownError) {
+			console.log("error:"+thrownError);
+		}
+	});
+}
+
+function gotoDelPage(comID) {
+	$("#delPrompt div p").html("Confirm Delete?");
+	$("#delText").attr("comID",comID);
+	$.mobile.changePage("#delPrompt");
+}
+
+</script>
+</head>
+<body>
+<div data-role="page">
+	<div data-role="header" data-position="fixed">
+		<h1>Medical Consultation</h1>
+		<a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">back</a>
+	</div>
+	<div data-role="content" class="ui-content">
+		<fieldset>
+			<h1>Discussion</h1>
+			<textarea id="taText"></textarea>
+			<button id="newText" data-role="button" class="ui-btn-a">Add New</button>
+		</fieldset>
+		<div id="conList">
+			<ul data-role="listview" data-inset="true"></ul>
+		</div>
+	</div>
+</div>
+
+<div data-role="page" id="delPrompt" data-dialog="true">
+	<div data-role="main" class="ui-content">
+		<h3>Delete Content</h3>
+		<p></p>
+		<a href="#" class="ui-btn ui-btn-inline ui-shadow ui-corner-all ui-btn-inline ui-mini" data-rel="back">Cancel</a>
+		<a id="delText" href="#" class="ui-btn ui-btn-inline ui-btn-b ui-shadow ui-corner-all ui-icon-delete ui-btn-icon-left ui-btn-inline ui-mini" data-rel="back">Confirm</a>
+	</div>
+</div>
+
+
+<div data-role="page" id="editPage">
+	<div data-role="header" data-position="fixed">
+		<h1>Edit Post</h1>
+		<a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">Back</a>
+	</div>
+	<div data-role="content">
+		<textarea id="editText" placeholder="edit post text"></textarea>
+		<button onclick="updateText();">Update</button>
+	</div>
+</div>
+
+</body>
+</html>

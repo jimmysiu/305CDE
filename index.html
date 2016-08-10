@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="css/jquery.mobile-1.4.5.min.css">
+<script type="text/javascript" src="js\jquery-2.2.4.min.js"></script>
+<script type="text/javascript" src="js\jquery.mobile-1.4.5.min.js"></script>
+<link rel="stylesheet" href="css/themes/drug.css" />
+<link rel="stylesheet" href="css/themes/jquery.mobile.icons.min.css" />
+<style type="text/css">
+body {
+	background-color: #FAFAFA;
+}
+</style>
+<script>
+$(document).ready(function() {
+	var _gotoPage = null;
+
+	if(checkLoginUser()) {
+		$("#loginLink").text("Logout");
+	} else {
+		$("#loginLink").text("Login");
+	}
+	
+	$("#loginLink").click(function() {
+		if($(this).text()=="Logout") {
+			localStorage.setItem("username","");
+		}
+	});
+
+	$("#formCreate input").blur(function() {
+		//alert($(this)[0].id);
+		var sErr = "";
+		if($(this)[0].id=="undefined") return;
+		var userid = $("#newid_textbox").val();
+		var userpw = $("#newpw_textbox").val();
+		var confpw = $("#confirmpw_textbox").val();
+		var uemail = $("#newemail_textbox").val();
+
+		switch($(this)[0].id) {
+			case "newid_textbox":
+				//objMsg = $("#newid_msg");
+				if($(this).val()=="") {
+					sErr = "user name required";
+				} else {
+					duplidateUserName(userid); 
+				}
+				break;
+			case "newpw_textbox":
+				//objMsg = $("#newpw_msg");
+				if($(this).val()=="") {
+					sErr = "user password required";
+				}
+				break;
+			case "confirmpw_textbox":
+				//objMsg = $("#confpw_msg");
+				if($(this).val()=="") {
+					sErr = "confirm password required";
+				} else if(confpw!=userpw) {
+					sErr = "incorrect confirm password";
+				}
+				break;
+			case "newemail_textbox":
+				//objMsg = $("#newemail_msg");
+				if($(this).val()=="") {
+					sErr = "email required";
+				}
+				break;	
+		}
+		$("#newacct_msg").text("").hide();
+		if(sErr!="") { $("#newacct_msg").text(sErr).fadeIn(2500); }
+		//alert(objMsg+"\n"+sErr);
+		//showErr(objMsg,sErr);
+	});
+	
+	$("#create_button").click(function() {
+		//if($("#newid_msg").text().length + $("#newpw_msg").text().length + $("#confpw_msg").text().length + $("#newemail_msg").text().length > 0 ) { return; }
+		if($("#newacct_msg").text().length > 0) { return; }
+		var userid = $("#newid_textbox").val();
+		var userpw = $("#newpw_textbox").val();
+		var uemail = $("#newemail_textbox").val();
+		
+		var formdata = { "username" : userid, "password" : userpw, "email" : uemail };
+		$.ajax({
+			url: "http://jimmysiu.me.ht/php/createUser.php",
+			type: "POST",
+			data: formdata,
+			dataType: "json",
+			success: function(rtn,status) {	//alert(JSON.stringify(rtn)+"\n"+(JSON.stringify(rtn).match(/true/)));
+				if(JSON.stringify(rtn).match(/true/)) {
+					//$.mobile.changePage("index.html");
+					// goto login page
+					//$(location).attr("href","index.html#page8");
+					$("#popupText").html("User created");
+					//$("#closeButton").attr("href","index.html");
+					_gotoPage = "index.html#page8";
+					$(location).attr("href","index.html#popDialog");
+				} 
+			}
+		});		
+	});
+	
+	$("#login_button").click(function() { 
+		var userid = $("#loginid_textbox").val();
+		var userpw = $("#loginpw_textbox").val();
+		var formdata = { "username" : userid, "password" : userpw };
+	    console.log(JSON.stringify(formdata));
+		//alert(JSON.stringify(formdata));
+		$.ajax({
+			url: "http://jimmysiu.me.ht/php/loginWeb.php",
+			type: "GET",
+			data: formdata,
+			dataType: "json",
+			success: function(rtn,status) {	
+				//alert(JSON.stringify(rtn));
+				console.log("rtn:"+JSON.stringify(rtn));
+				if(JSON.stringify(rtn).match(/true/)) {
+					//loginUser = userid;
+					localStorage.setItem("username",userid);
+					//$.mobile.changePage("index.html");
+					//$(location).attr("href","index.html");
+					$("#popupText").html("Login Success");
+					//$("#closeButton").attr("href","index.html");
+					//alert($("#closeButton").attr("href"));
+					_gotoPage = "index.html";
+					$(location).attr("href","index.html#popDialog");
+				} else {
+					alert("login failed");
+				} 
+			}
+		});
+	});
+	
+	$("#closeButton").click(function() {	
+		//alert("goto:"+_gotoPage);
+		if(_gotoPage==null) { _gotoPage = "index.html"; }
+		$(location).attr("href",_gotoPage);
+	});
+});
+
+function duplidateUserName(username) {
+	var formdata = { "username" : username };
+	//alert(JSON.stringify(formdata));
+	$.ajax({
+		url: "http://jimmysiu.me.ht/php/dupUserName.php",
+		type: "GET",
+		data: formdata,
+		dataType: "json",
+		success: function(rtn,status) {
+		//alert(JSON.stringify(rtn)+"\n"+(JSON.stringify(rtn)=="true"));
+			if(JSON.stringify(rtn).match(/true/)) {
+				showErr(($("#newacct_msg")),"username already exists");
+			} 
+		}
+	});
+}
+
+function showErr(obj,sMsg) {
+
+	if($(obj)) {
+		if(sMsg=="") { $(obj).hide();
+		} else { $(obj).show(); }
+		$(obj).text(sMsg).fadeIn(2500);
+	}
+}
+
+function checkLoginUser() {
+	if (typeof(Storage) !== "undefined") {
+		 // Code for localStorage/sessionStorage.
+		 if (localStorage.getItem("username")) {
+			var LoginUser = localStorage.getItem("username");
+			if(LoginUser !== "") {
+				//alert("welcome "+localStorage.getItem("username"));
+				return true;
+			}
+		 }
+	} else {
+		 // Sorry! No Web Storage support..
+		 //alert("not support web storage");
+	}
+	return false;
+}
+</script>
+
+<meta charset="UTF-8">
+</head>
+<body>
+<div data-role="page">
+   <div class="logo"></div>
+	<div data-role="header" class="heading">
+		<h1>Narcotics Division</h1>
+	</div>
+    <div data-role="content"><img src="images/logotest.png" width="150" height="150" alt=""/></div>
+	<div data-role="content">	
+		<ul data-role="listview" class="mainmenu">
+			<li><a id="loginLink" href="#page8">Login</a></li>
+			<li><a href="#page2">What's New</a></li>
+			<li><a href="#page3">About Narcotics Division</a></li>
+			<li><a href="#page4">Press Release</a></li>
+			<li><a href="#page5">FAQ</a></li>
+			<li><a href="#page6">Useful Link</a></li>
+			<li><a href="#page7">Location</a></li>
+            <li><a href="jimForum.html">Medical Consultation</a></li>
+		</ul>		
+	</div>
+	<div data-role="footer" data-position="fixed">
+		<h4>&copy;2016 &bull; No Drug</h4>
+	</div>
+</div>
+<div data-role="page" id="page2">
+	<div data-role="header">
+		<h1>What's New</h1>
+        <a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">Back</a>
+	</div>
+	<div data-role="content">	
+		<p><img src="images/nodrug2.png" alt="photo" width="300" />
+		<li><a href="#page2_2">	Amendments to Dangerous Drugs Ordinance to take effect on July 8</a></li></p>
+        <p><li><a href="#page2_2">	Territory-wide campaign against drug abuse launches</a></li></p>
+        <p><li><a href="#page2_2">	Total number of reported drug abusers declines but drug abuse problem among young adults requires attention</a></li></p>
+        <p><li><a href="#page2_2">Amendments to Dangerous Drugs Ordinance to be gazetted on May 6	</a></li></p>
+	</div>
+
+    <div data-role="footer">
+		<h4></h4>
+	</div>
+    <div data-role="content">	
+		<ul data-role="listview" class="mainmenu">
+            <li><a href="#page2">What's New</a></li>
+			<li><a href="#page3">About Narcotics Division</a></li>
+            <li><a href="#page4">Press Release</a></li>
+            <li><a href="#page5">FAQ</a></li>
+            <li><a href="#page6">Useful Link</a></li>
+            <li><a href="#page7">Location</a></li>
+		</ul>		
+	</div>
+    <div data-role="footer">
+		<h4>&copy;2016 &bull; No Drug</h4>
+	</div>
+</div>
+
+<div data-role="page" id="page2_1">
+	<div data-role="header">
+		<h1>What's New</h1>
+        <a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">Back</a>
+	</div>
+	<div data-role="content">	
+		<p>Amendments to Dangerous Drugs Ordinance to take effect tomorrow<br>
+	    *******************************************************</p>
+		<p>     A spokesperson for the Security Bureau said today (July 7) that the Dangerous Drugs Ordinance (Amendment of First Schedule) Order 2016 would come into effect tomorrow (July 8). <br>
+		  <br>
+		       The Order will add Tapentadol and AH-7921 to the First Schedule to the Dangerous Drugs Ordinance.<br>
+		  <br>
+		       The spokesperson said, "The amendments aim to deter the trafficking and abuse of Tapentadol and AH-7921. This will help to fortify Hong Kong's defence line in the fight against drugs."<br>
+		  <br>
+		       The Order was published in the Gazette on May 6 and introduced into the Legislative Council on May 11.<br>
+		  <br>
+		       The spokesperson added, "Illicit trafficking and manufacture of dangerous drugs are liable to maximum penalties of a fine of $5 million and life imprisonment under the Dangerous Drugs Ordinance. Offenders are liable to maximum penalties of a fine of $1 million and imprisonment for seven years for possession or consumption of these substances.<br>
+		  <br>
+		       "Legislative control is an important element in fighting against new emerging drugs. At the same time, the Government will continue its efforts in combating the drug problem in a holistic manner along the five-pronged strategy, namely, preventive education and publicity, treatment and rehabilitation, legislation and law enforcement, external co-operation and research."<br>
+	  </p>
+		<p>Ends/Thursday, July 7, 2016<br>
+		  Issued at HKT 11:00<br>
+		  <br>
+		  source: http://www.nd.gov.hk/</p>		
+	</div>
+    
+        <div data-role="content">	
+		<ul data-role="listview" class="mainmenu">
+            <li><a href="#page2">What's New</a></li>
+			<li><a href="#page3">About Narcotics Division</a></li>
+            <li><a href="#page4">Press Release</a></li>
+            <li><a href="#page5">FAQ</a></li>
+            <li><a href="#page6">Useful Link</a></li>
+            <li><a href="#page7">Location</a></li>
+		</ul>		
+	</div>
+    
+	<div data-role="footer">
+		<h4>&copy;2016 &bull; No Drug</h4>
+	</div>
+</div>
+
+<div data-role="page" id="page2_2">
+	<div data-role="header">
+		<h1>What's New</h1>
+        <a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">Back</a>
+	</div>
+	<div data-role="content">	
+		<p>Territory-wide campaign against drug abuse launches today (with photos)<br>
+		  **********************************************************
+		<p>     The Chief Executive, Mr C Y Leung, today (June 25) officiated at the opening ceremony of the large-scale anti-drug event "Power Your Life, Fight Drugs Together 2016", launching this year's territory-wide campaign against drug abuse.<br>
+		  <br>
+		       The event was co-organised by the Narcotics Division (ND) of the Security Bureau, the Action Committee Against Narcotics (ACAN) and Radio Television Hong Kong (RTHK) in support of United Nations International Day against Drug Abuse and Illicit Trafficking on June 26 and to rally community support for combating drug abuse.<br>
+		  <br>
+		       The event "Power Your Life, Fight Drugs Together 2016" aims to disseminate the message that every member of the community can play an active role in the anti-drug cause by unleashing positive energy and leading a healthy life. By showing care to family and friends, every person can help identify those with drug problems and encourage them to seek help early.<br>
+		  <br>
+		       More than 1 400 young people, including members of the Junior Police Call and uniformed groups, students, representatives from non-governmental organisations, social services groups of the anti-drug sector as well as the education sector, attended the event held at MacPherson Stadium today. They pledged to join together to build a drug-free society.<br>
+		  <br>
+		       Solar Ambassadors gave an energetic African drum performance at the event. A youth group sang to encourage young people to stay positive and strive to achieve their dreams. Singers Calvin Choy, Edmond So, Joyce Cheng and C AllStar also participated in the event. They called on youngsters to develop healthy hobbies and say "No" to drugs.<br>
+		  <br>
+		       New TV Announcements in the Public Interest (APIs), aiming to encourage young people to adopt positive attitudes and stand firm against drug temptation, were premiered at the event. The TV APIs and the corresponding radio APIs will be broadcast on TV and radio from tonight.<br>
+		  <br>
+		       Concluding the event, the Permanent Secretary for Security, Mr Joshua Law, and other guests led participants to chant the anti-drug slogan to show their determination to fight drugs together.<br>
+		  <br>
+		       The event marked the official launch of the territory-wide campaign against drug abuse. A series of anti-drug publicity programmes will be rolled out during the summer holidays. To complement the new TV and radio APIs, anti-drug advertisements will be displayed on public transportation networks, at entertainment venues, and on online platforms and mobile applications. Giant wall banners will also be mounted on government buildings.<br>
+		  <br>
+		       The ND and ACAN will collaborate with radio stations and organisations to deliver various anti-drug publicity initiatives, such as radio dramas, talks and visits to workplaces. The purpose is to raise public awareness of the drug problem, especially among young people, and to encourage drug abusers to seek help early. The Hong Kong Jockey Club Drug InfoCentre will continue to organise different activities to promote healthy lifestyles to enhance youngsters' resilience against drugs.<br>
+		  <br>
+		       Other officiating guests at today's event included the Secretary for Security, Mr Lai Tung-kwok; the Permanent Secretary for Security, Mr Joshua Law; the Under Secretary for Security, Mr John Lee; the Chairman of the ACAN, Dr Ben Cheung; the Chairman of the ACAN Sub-committee on Preventive Education and Publicity, Dr Tik Chi-yuen; the Chairman of the ACAN Sub-committee on Treatment and Rehabilitation, Dr Susan Fan; Convenor of the Research Advisory Group, Professor Cheung Yuet-wah; the Commissioner for Narcotics, Ms Manda Chan; and the Acting Deputy Director of Broadcasting (Programmes), Mr Chan Yiu-wah.<br>
+	  </p>
+		<p>Ends/Saturday, June 25, 2016<br>
+		  Issued at HKT 18:26<br>
+		  <br>
+		  source: http://www.nd.gov.hk/</p>		
+	</div>
+    <div data-role="content">	
+		<ul data-role="listview" class="mainmenu">
+            <li><a href="#page2">What's New</a></li>
+			<li><a href="#page3">About Narcotics Division</a></li>
+            <li><a href="#page4">Press Release</a></li>
+            <li><a href="#page5">FAQ</a></li>
+            <li><a href="#page6">Useful Link</a></li>
+            <li><a href="#page7">Location</a></li>
+		</ul>		
+	</div>
+    <div data-role="footer">
+		<h4>&copy;2016 &bull; No Drug</h4>
+	</div>
+</div>
+
+<div data-role="page" id="page2_3">
+	<div data-role="header">
+		<h1>What's New</h1>
+        <a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">Back</a>
+	</div>
+	<div data-role="content">	
+		<p>Total number of reported drug abusers declines but drug abuse problem among young adults requires attention<br>
+		  ********************************************************
+		<p>     The Action Committee Against Narcotics (ACAN) at its quarterly meeting today (June 17) reviewed the local drug situation in the first quarter of 2016. Members noted that the local drug situation had continued to improve. Both the total number of reported drug abusers and the total number of reported young drug abusers had decreased compared to the figures for the same period in 2015. Meanwhile, the drug abuse problem among young adults still required attention.  <br>
+		  <br>
+		       According to the latest figures of the Central Registry of Drug Abuse (CRDA), the total number of reported drug abusers in the first quarter of 2016 decreased by 28 per cent (from 3,296 to 2,389), as compared to that in the same period last year. The number of newly reported drug abusers also decreased by 38 per cent (from 620 to 385). However, over half (55 per cent) of these abusers were in young adulthood (aged 21 to 35), reflecting that the drug abuse problem in this age group warrants particular attention.<br>
+		  <br>
+		       The number of reported drug abusers aged under 21 decreased by 50 per cent (from 298 to 148), while the number of those newly reported decreased by 40 per cent (from 141 to 85).<br>
+		  <br>
+		       The latest CRDA figures also showed that the hidden drug abuse problem had remained a concern. The median drug history of newly reported abusers (i.e. the time for abusers to be discovered by the CRDA reporting agencies from their first drug abuse) was 4.9 years, compared with 5.8 years in 2015.<br>
+		  <br>
+		       At the meeting, Members also reviewed other local drug-related figures in the first quarter of 2016 compared to those in the same period in 2015. <br>
+		  <br>
+		       In the first quarter of 2016, the number of reported narcotic analgesic abusers decreased by 19 per cent (from 1,677 to 1,353), while that of psychotropic substance abusers decreased by 35 per cent (from 1,957 to 1,276). The former number was slightly higher than the latter.<br>
+		  <br>
+		       Heroin remained the most common type of drug abused among all reported drug abusers. However, the total number of reported heroin abusers decreased by 19 per cent (from 1,676 to 1,352).<br>
+		  <br>
+		       Methamphetamine ("ice") continued to surpass ketamine as the most common type of psychotropic substance abused. Nevertheless, the total number of reported "ice" abusers decreased by 29 per cent (from 740 to 526), while that of reported ketamine abusers decreased by 58 per cent (from 832 to 349).<br>
+		  <br>
+		       The total numbers of reported abusers of all other major types of psychotropic substances also recorded reductions: cocaine decreased by 40 per cent (from 231 to 138), cannabis decreased by 33 per cent (from 126 to 85), cough medicine decreased by 17 per cent (from 117 to 97) and triazolam/midazolam/zopiclone decreased by 6 per cent (from 283 to 265).<br>
+		  <br>
+		       The ACAN Chairman, Dr Ben Cheung, said, "Despite the downward trend of the number of reported drug abusers, we shall not slacken our anti-drug work, particularly in addressing the problems of hidden drug abuse and the relatively high proportion of drug-abusing young adults. Young adults falling prey to drugs would have to face many practical problems in respect of work, living expenses and relationships with family members. This will require concerted efforts of the Government, the anti-drug sector and the community in formulating appropriate measures to identify the drug abusers and encourage them to seek help early."<br>
+		  <br>
+		       The Commissioner for Narcotics, Ms Manda Chan, said, "The Government will continue to work closely with ACAN to step up anti-drug initiatives under the five-pronged strategy, namely preventive education and publicity, treatment and rehabilitation, legislation and law enforcement, external co-operation and research. This will include the launch of a new set of television and radio Announcements in the Public Interest to encourage staying away from drugs and urge people in need to seek help early. Related publicity and advertisements disseminating anti-drug messages will be strengthened on public transportation networks, in entertainment venues, on popular websites, on social media and in applications for mobile devices during the summer holidays. We will continue to encourage young people to resist drugs by adopting a healthy lifestyle. There will also be ongoing promotion of the 24-hour help-seeking helpline 186 186, and the instant messaging service 98 186 186."<br>
+		  <br>
+		       The CRDA figures for the first quarter of 2016 are available on the Narcotics Division's website (<a href="http://www.nd.gov.hk/" target="_blank">www.nd.gov.hk</a>).<br>
+	  </p>
+		<p>Ends/Friday, June 17, 2016<br>
+		  Issued at HKT 17:32<br>
+		  <br>
+		  source: http://www.nd.gov.hk/</p>		
+	</div>
+    <div data-role="content">	
+		<ul data-role="listview" class="mainmenu">
+            <li><a href="#page2">What's New</a></li>
+			<li><a href="#page3">About Narcotics Division</a></li>
+            <li><a href="#page4">Press Release</a></li>
+            <li><a href="#page5">FAQ</a></li>
+            <li><a href="#page6">Useful Link</a></li>
+            <li><a href="#page7">Location</a></li>
+		</ul>		
+	</div>
+	<div data-role="footer">
+		<h4>&copy;2016 &bull; No Drug</h4>
+	</div>
+</div>
+
+<div data-role="page" id="page2_4">
+	<div data-role="header">
+		<h1>What's New</h1>
+        <a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">Back</a>
+	</div>
+	<div data-role="content">	
+		<p>Amendments to Dangerous Drugs Ordinance to be gazetted on May 6<br>
+		  **********************************************************
+		<p>     A spokesperson for the Security Bureau said today (May 4) that the Government will publish the Dangerous Drugs Ordinance (Amendment of First Schedule) Order 2016 in the Gazette this Friday (May 6).<br>
+		  <br>
+		       The Order will add tapentadol and AH-7921 to the First Schedule to the Dangerous Drugs Ordinance.<br>
+		  <br>
+		       The spokesperson said, "The amendments aim to deter the trafficking and abuse of tapentadol and AH-7921. This will help to fortify Hong Kong's defence line in the fight against drugs."<br>
+		  <br>
+		       The spokesperson added, "Studies reveal that overdose of tapentadol may lead to constriction of the pupils, vomiting, loss of consciousness, seizures, difficulty in breathing and a risk of serious complications likely to lead to death. For AH-7921, the drug effects of abuse are similar to those of morphine."<br>
+		  <br>
+		       "The Order will subject the above two substances to the same strict control as other dangerous drugs. Those prosecuted for illicit trafficking and manufacture of these substances will be liable to a maximum penalty of a fine of $5 million and life imprisonment. Possession, consumption and supply of the substances would also constitute criminal offences."<br>
+		  <br>
+		       The spokesperson said that the Government had consulted the Action Committee Against Narcotics and the Panel on Security of the Legislative Council and they supported the proposed amendments. The Government had also sought the views of relevant trades and stakeholders.<br>
+		  <br>
+		       The Amendment Order will be introduced into the Legislative Council on May 11, 2016, and is expected to become effective on July 8, 2016.<br>
+	  </p>
+		<p>Ends/Wednesday, May 4, 2016<br>
+		  Issued at HKT 11:02<br>
+		  <br>
+		  source: http://www.nd.gov.hk/</p>		
+	</div>
+    <div data-role="content">	
+		<ul data-role="listview" class="mainmenu">
+            <li><a href="#page2">What's New</a></li>
+			<li><a href="#page3">About Narcotics Division</a></li>
+            <li><a href="#page4">Press Release</a></li>
+            <li><a href="#page5">FAQ</a></li>
+            <li><a href="#page6">Useful Link</a></li>
+            <li><a href="#page7">Location</a></li>
+		</ul>		
+	</div>
+	<div data-role="footer">
+		<h4>&copy;2016 &bull; No Drug</h4>
+	</div>
+</div>
+
+<div data-role="page" id="page3">
+	<div data-role="header">
+		<h1>About Narcotics Division</h1>
+        <a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">Back</a>
+	</div>
+	<div data-role="content">
+		<h2>Narcotics Division, Security Bureau</h2>
+		<p>Work of Narcotics Division</p>
+		<figure>		</figure>
+		<p>The Narcotics Division (ND) of the Security Bureau is tasked with co-ordinating policies and measures across the public sector, non-government organisations (NGOs) and the community to combat the problem of drug abuse. It also assists in the fight against money laundering and terrorist financing.</p>
+		<p>Headed by the Commissioner for Narcotics, ND join hands with the Action Committee Against Narcotics to combat the drug abuse problem through following five-pronged strategy -</p>
+        <p><li>Enactment of and review on legislation to target illegal supply, trafficking and use of psychotropic substances and law enforcement by the Police and the Customs and Excise Department; </li><li>Preventive education and publicity programmes organised by ND, other departments, and community partners and non-government organisations; </li>
+        <li>Treatment and rehabilitation services for drug dependent persons; </li>
+        <li>Research work facilitating the formulation of anti-drug strategies and programmes; and </li>
+        <li>External co-operation enabling joint actions and exchange of information on anti-drug matters with Mainland and overseas authorities.</li></p>
+
+	</div>
+    <div data-role="content">	
+		<ul data-role="listview" class="mainmenu">
+            <li><a href="#page2">What's New</a></li>
+			<li><a href="#page3">About Narcotics Division</a></li>
+            <li><a href="#page4">Press Release</a></li>
+            <li><a href="#page5">FAQ</a></li>
+            <li><a href="#page6">Useful Link</a></li>
+            <li><a href="#page7">Location</a></li>
+		</ul>		
+	</div>
+	<div data-role="footer">
+		<h4>&copy;2016 &bull; No Drug</h4>
+	</div>
+</div>
+
+<div data-role="page" id="page4">
+	<div data-role="header">
+		<h1>Press Release</h1>
+        <a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">Back</a>
+	</div>
+	<div data-role="content">
+    <div class="ui-grid-solo">
+		<iframe src="youtubePage.html" width=640px height=480px frameborder="0" allowfullscreen></iframe>
+       
+	</div>
+	</div>
+    <div data-role="content">	
+		<ul data-role="listview" class="mainmenu">
+            <li><a href="#page2">What's New</a></li>
+			<li><a href="#page3">About Narcotics Division</a></li>
+            <li><a href="#page4">Press Release</a></li>
+            <li><a href="#page5">FAQ</a></li>
+            <li><a href="#page6">Useful Link</a></li>
+            <li><a href="#page7">Location</a></li>
+            <li><a href="jimForum.html">Medical Consultation</a></li>
+		</ul>		
+	</div>
+	<div data-role="footer">
+		<h4>&copy;2016 &bull; No Drug</h4>
+	</div>
+</div>
+
+<div data-role="page" id="page5">
+	<div data-role="header">
+		<h1>FAQ on Drugs</h1>
+        <a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">Back</a>
+	</div>
+	<div data-role="content">
+		<h2>What are the consequences of abusing drugs?</h2>
+		<p>Each drug has its own potential risks, and the risks can be potentiated by impurities or adulterants, and the unique reaction of each individual user. Drugs offered in the illicit market are not always what they are claimed to be. The buyer can rarely be sure of the content or the strength of the substance. If illicitly manufactured, the substances are likely to contain impurities or adulterants. It is also noteworthy that taking drugs with alcohol is even more dangerous and can be fatal.</p>
+		<figure>
+			<img src="images/nodrug.jpeg" alt="photo" width="200" />
+			<figcaption></figcaption>
+		</figure>
+		<h2>Is it true that it is less harmful to abuse psychotropic substances?
+</h2>
+		<p>Absolutely NOT! Frequent use of psychotropic substances in high doses and for a long time is likely to distort an individual's perception of and response to environment. Even in moderate doses, most psychotropic substances impair motor control, reaction time, and the ability to maintain attention. Drug users are likely to be a hazard to themselves and to others when operating machinery or a motor vehicle, or crossing roads, etc.</p>
+        
+        <h2>What will happen if taking more than one kind of drug at a time?</h2>
+		<p>Taking more than one drug all at a time is extremely dangerous because even small doses of each may prove fatal. Complex interactions can occur among various types of drugs and increase the risk of a harmful or fatal outcome.</p>
+        
+        <h2>Can drug abuse make you happy?</h2>
+		<p>No! Many drugs amplify mood, so if someone is angry, anxious, or depressed, drugs could make that person feel even worse. Even drugs that are thought to have a calming effect (like alcohol and tranquillizers) can release aggressive impulses. They can also weaken one's social and personal inhibitions, causing one to act in a manner he will later regret. Violence causing serious injuries or deaths to the abusers or others, sexual offences and date rape are often involved with the taking of drugs.</p>
+        
+        <h2>Are drugs addictive?</h2>
+		<p>Yes! Drugs not only alter behaviour, but also create physical and psychological dependence to varying degrees. Physical dependence causes withdrawal symptoms when the drug is discontinued. Psychological dependence causes a craving for the drug to ease the abuser's mind. Tolerance to drugs frequently develops so that higher doses are required to satisfy the craving or suppress the withdrawal symptoms. As a user becomes drug-dependent, he needs a constant supply of cash, and may resort to serious crimes to support his habit. Some may eventually die of overdose.</p>
+	</div>
+    <div data-role="content">	
+		<ul data-role="listview" class="mainmenu">
+            <li><a href="#page2">What's New</a></li>
+			<li><a href="#page3">About Narcotics Division</a></li>
+            <li><a href="#page4">Press Release</a></li>
+            <li><a href="#page5">FAQ</a></li>
+            <li><a href="#page6">Useful Link</a></li>
+            <li><a href="#page7">Location</a></li>
+		</ul>		
+	</div>
+	<div data-role="footer">
+		<h4>&copy;2016 &bull; No Drug</h4>
+	</div>
+</div>
+
+<div data-role="page" id="page6">
+	<div data-role="header">
+		<h1>Useful Link</h1>
+        <a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">Back</a>
+	</div>
+	<div data-role="content">
+		<table border="0" cellspacing="2" cellpadding="2">
+		  <tbody>
+		    <tr valign="middle">
+		      <td nowrap=""><img src="images/bullet_1.gif" alt=""></td>
+		      <td width="100%" colspan="3"><strong>Related Government Bureaux/Departments and Organisations</strong></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.sb.gov.hk/" target="_blank" title="This link will open in new window">Security Bureau</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.edb.gov.hk/" target="_blank" title="This link will open in new window">Education Bureau</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.csd.gov.hk/" target="_blank" title="This link will open in new window">Correctional Services Department</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.customs.gov.hk/" target="_blank" title="This link will open in new window">Customs and Excise Department</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.govtlab.gov.hk/" target="_blank" title="This link will open in new window">Government Laboratory</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.dh.gov.hk/" target="_blank" title="This link will open in new window">Department of Health</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.police.gov.hk/" target="_blank" title="This link will open in new window">Hong Kong Police Force</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.swd.gov.hk/" target="_blank" title="This link will open in new window">Social Welfare Department</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.ha.org.hk/" target="_blank" title="This link will open in new window">Hospital Authority</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""><img src="images/bullet_1.gif" alt=""></td>
+		      <td width="100%" colspan="3"><strong>Counselling Centres for Psychotropic Substance Abusers</strong></td>
+	        </tr>
+		    <tr valign="top">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://crosscentre.tungwahcsd.org/" target="_blank" title="This link will open in new window">Tung Wah Group of Hospitals CROSS Centre : Central Western, Southern and Islands Office</a></td>
+	        </tr>
+		    <tr valign="top">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://crosscentre.tungwahcsd.org/" target="_blank" title="This link will open in new window">Tung Wah Group of Hospitals CROSS Centre : Eastern and Wanchai Office</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://evergreen-ccpsa.hklss.hk/" target="_blank">Hong Kong Lutheran Social Service Evergreen Lutheran Centre</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://rainbow-ccpsa.hklss.hk/" target="_blank">Hong Kong Lutheran Social Service Rainbow Lutheran Centre</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.hkcs.org/gcb/ps33/ps33-e.html" target="_blank" title="This link will open in new window">Hong Kong Christian Service PS33 - Tsimshatsui Centre</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.hkcs.org/gcb/ps33/ps33-e.html" target="_blank" title="This link will open in new window">Hong Kong Christian Service PS33 - Shamshuipo Centre</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.sanecentre.net/" target="_blank" title="This link will open in new window">Hong Kong Children &amp; Youth Services Sane Centre</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://hugs.caritas.org.hk/" target="_blank" title="This link will open in new window">Caritas HUGS Centre</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://ec.elchk.org.hk/" target="_blank" title="This link will open in new window">The Evangelical Lutheran Church of Hong Kong, Enlighten Centre</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://neoh.skhwc.org.hk/" target="_blank" title="This link will open in new window">Hong Kong Sheng Kung Hui Welfare Council Neo-Horizon</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://cheer-ccpsa.hklss.hk/" target="_blank">Hong Kong Lutheran Social Service Cheer Lutheran Centre</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""><img src="images/bullet_1.gif" alt=""></td>
+		      <td width="100%" colspan="3"><strong>Centre for Drug Counselling</strong></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.caritaslokheepclub.org.hk/" target="_blank" title="This link will open in new window">Caritas Lok Heep Club</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""><img src="images/bullet_1.gif" alt=""></td>
+		      <td width="100%" colspan="3"><strong>Agencies Providing Voluntary Residential Drug Treatment and Rehabilitation Programmes</strong></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.barnabas.com.hk/" target="_blank" title="This link will open in new window">Barnabas Charitable Service Association</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.caritaslokheepclub.org.hk/eng/ewongyn.htm" target="_blank" title="This link will open in new window">Caritas Wong Yiu Nam Centre</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.newbeing.org.hk/" target="_blank" title="This link will open in new window">Christian New Being Fellowship</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.hknewlife.org/" target="_blank" title="This link will open in new window">Christian New Life Association</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.hkschooltv.com/ZhengSheng/welcome.html" target="_blank" title="This link will open in new window">Christian Zheng Sheng Association</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.lingoi.org/index.php" target="_blank" title="This link will open in new window">The Evangelical Lutheran Church of Hong Kong, Ling Oi Centre</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="https://www.facebook.com/pages/Glorious-Praise-Fellowship-Drug-Rehabilitation-and-Filipino-Fellowship/150214438403874?fref=ts" target="_blank" title="This link will open in new window">Glorious Praise Fellowship</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.hkcs.org/gcb/jclrs/jclrs-e.html" target="_blank" title="This link will open in new window">Hong Kong Christian Service Jockey Club Lodge of the Rising Sun</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.hknewlife.org/" target="_blank" title="This link will open in new window">Mission Ark</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://opdawn.org.hk/" target="_blank" title="This link will open in new window">Operation Dawn</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.perfectfellowship.org.hk/" target="_blank" title="This link will open in new window">Perfect Fellowship</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.sracp.org.hk/" target="_blank" title="This link will open in new window">The Society of Rehabilitation and Crime Prevention, Hong Kong</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.sarda.org.hk/" target="_blank" title="This link will open in new window">The Society for the Aid and Rehabilitation of Drug Abusers (SARDA)</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.wuoi.org.hk/" target="_blank" title="This link will open in new window">Wu Oi Christian Centre</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""><img src="images/bullet_1.gif" alt=""></td>
+		      <td width="100%" colspan="3"><strong>Methadone Treatment Programme and Clinics</strong></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.dh.gov.hk/english/main/main_mc/main_mc.html" target="_blank" title="This link will open in new window">Methadone Clinics operated by the Department of Health</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap="" valign="top"><img src="images/bullet_1.gif" alt=""></td>
+		      <td width="100%" colspan="3"><strong>Compulsory Placement Scheme <br>
+		        <br>
+		        Correctional Services Department:</strong></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.csd.gov.hk/english/facility/facility_ind/ins_hlc_hlcatc.html" target="_blank" title="This link will open in new window">Hei Ling Chau Addiction Treatment Centre</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.csd.gov.hk/english/facility/facility_ind/ins_hlc_nkci.html" target="_blank" title="This link will open in new window">Nei Kwu Correctional Institution</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.csd.gov.hk/english/facility/facility_ind/ins_hlc_lsci.html" target="_blank" title="This link will open in new window">Lai Sun Correctional Institution</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""><img src="images/bullet_1.gif" alt=""></td>
+		      <td width="100%" colspan="3"><strong>Substance Abuse Clinics Run by the Hospital Authority</strong></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.ha.org.hk/kch/eng/departments/cs/depart-saau.html" target="_blank" title="This link will open in new window">Kwai Chung Hospital Substance Abuse Assessment Clinic</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.ha.org.hk/cph/en/services/sa.asp" target="_blank" title="This link will open in new window">Castle Peak Hospital Tuen Mun Substance Abuse Clinic</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""><img src="images/bullet_1.gif" alt=""></td>
+		      <td width="100%" colspan="3"><strong>Agencies Providing Other Anti-drug Support Services</strong></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://ycpc.hkfyg.org.hk/" target="_blank" title="This link will open in new window">Youth Crime Prevention Centre of Hong Kong Federation of Youth Groups (Chinese only)</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://ycpc.hkfyg.org.hk/youthlaw/" target="_blank" title="This link will open in new window">"Youth Law" website by Hong Kong Federation of Youth Groups (Chinese only)</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.hkcss.org.hk/e/" target="_blank" title="This link will open in new window">The Hong Kong Council of Social Service</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.kely.org/en/index.html" target="_blank" title="This link will open in new window">Kely Support Group</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.leap.org.hk/" target="_blank" title="This link will open in new window">Life Education Activity Programme</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.cdac.org.hk/" target="_blank" title="This link will open in new window">Community Drug Advisory Council</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""><img src="images/bullet_1.gif" alt=""></td>
+		      <td width="100%" colspan="3"><strong>Other Anti-drug Related Websites</strong></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.unodc.org/unodc/index.html" target="_blank" title="This link will open in new window">United Nations Office on Drugs and Crime</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.unodc.org/eastasiaandpacific/" target="_blank" title="This link will open in new window">United Nations Office on Drugs and Crime, Regional Centre for East Asia and the Pacific</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.unodc.org/youthnet/" target="_blank" title="This link will open in new window">United Nations Office on Drugs and Crime - The Global Youth Network</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""><img src="images/bullet_1.gif" alt=""></td>
+		      <td width="100%" colspan="3"><strong>Countering Money Laundering and Terrorists Financing Related Websites</strong></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.fstb.gov.hk/fsb/aml/eng/intro/intro.htm" target="_blank" title="This link will open in new window">Financial Services and the Treasury Bureau</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.jfiu.gov.hk/" target="_blank" title="This link will open in new window">Joint Financial Intelligence Unit</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.fatf-gafi.org/" target="_blank" title="This link will open in new window">Financial Action Task Force on Money Laundering</a></td>
+	        </tr>
+		    <tr valign="middle">
+		      <td nowrap=""> </td>
+		      
+		      <td width="100%" colspan="2"><a href="http://www.apgml.org/" target="_blank" title="This link will open in new window">Asia/Pacific Group on Money Laundering</a></td>
+	        </tr>
+	      </tbody>
+	  </table>
+		<h2>&nbsp;</h2>
+	</div>
+    <div data-role="content">	
+		<ul data-role="listview" class="mainmenu">
+            <li><a href="#page2">What's New</a></li>
+			<li><a href="#page3">About Narcotics Division</a></li>
+            <li><a href="#page4">Press Release</a></li>
+            <li><a href="#page5">FAQ</a></li>
+            <li><a href="#page6">Useful Link</a></li>
+            <li><a href="#page7">Location</a></li>
+		</ul>		
+	</div>
+	<div data-role="footer">
+		<h4>&copy;2016 &bull; No Drug</h4>
+	</div>
+</div>
+<div data-role="page" id="page7">
+  <div data-role="header">
+	<h1>Location</h1>
+  	<a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">Back</a>
+  </div>
+  <div data-role="content">
+    <iframe src="demoMap.html" width=100% height=600px frameborder=0 seamless></iframe>
+  
+  </div>
+</div>
+
+
+
+<div data-role="page" id="page8">
+	<div data-role="header">
+		<h1>Login</h1>
+		<a href="index.html" data-rel="back" data-icon="arrow-l" data-iconpos="notext" data-transition="flip">Back</a>
+	</div>
+	
+	<div data-role="content">
+    <!--<form id="loginForm">-->
+	  <p>Username:</p>
+	  <p>
+	    <label for="loginid_textbox"></label>
+	    <input type="text" name="loginid_textbox" id="loginid_textbox">
+	  </p>
+	  <p>Password:</p>
+	  <p>
+	    <label for="loginpw_textbox"></label>
+	    <input type="password" name="loginpw_textbox" id="loginpw_textbox">
+	  </p>
+	  <p>
+	    <!--<input type="submit" name="register" id="login_button" value="login now">-->
+		 <button id="login_button">Login New</button>
+        
+	  </p>
+	  <p><a href="#page9" data-ajax="false">&rarr; Create Account</a></p>
+      <!--</form>-->
+     
+	</div>
+	<div data-role="footer" data-position="fixed">
+		<h4>&copy;2016 &bull; No Drug</h4>
+	</div>
+</div>
+
+<div data-role="page" id="page9">
+	<div data-role="header">
+		<h1>Create Account</h1>
+		<a href="index.html" data-rel="back" data-icon="arrow-l" data-iconpos="notext" data-transition="flip">Back</a>
+	</div>
+	
+	<div data-role="content">
+    <form id="formCreate" class="form" method="post" action="#">
+	  <p>Username:</p>
+	  <p>
+	    <label for="newid_textbox"></label>
+	    <input type="text" name="newid_textbox" id="newid_textbox">
+		 <label id="newid_msg" style="color:#FF0000; visibility:hidden;"></label>
+	  </p>
+      <p>Password:</p>
+	  <p>
+	    <label for="newpw_textbox"></label>
+	    <input type="password" name="newpw_textbox" id="newpw_textbox">
+		 <label id="newpw_msg" style="color:#FF0000; visibility:hidden;"
+	  </p>
+	  <p>Confirm Password:</p>
+	  <p>
+	    <label for="confirmpw_textbox"></label>
+	    <input type="password" name="confirmpw_textbox" id="confirmpw_textbox">
+		 <label id="confpw_msg" style="color:#FF0000; visibility:hidden;"
+	  </p>
+	  <p>Email:</p>
+	  <p>
+	    <label for="newemail_textbox"></label>
+	    <input type="text" name="newemail_textbox" id="newemail_textbox">
+		 <label id="newemail_msg" style="color:#FF0000; visibility:hidden;"
+	  </p>
+	  <p>
+	    <!--<input type="submit" name="register" id="create_button" value="Create now">-->
+       <button id="create_button">Create now</button>
+		 <br><label id="newacct_msg" style="color:#FF0000"></label>
+	  </p>
+	  
+	  </form>
+     
+	</div>
+	<div data-role="footer" data-position="fixed">
+		<h4>&copy;2016 &bull; No Drug</h4>
+	</div>
+	
+</div>
+
+<div data-role="dialog" id="popDialog">
+	<div role="main" class="ui-content" data-theme="a">
+		<h1 id="popupText"></h1>
+	</div>
+   <a href="#" id="closeButton" data-role="button">Ok</a>
+</div>
+</body>
+</html>
